@@ -221,10 +221,6 @@ def hdl_wid_20100(params: WIDParams):
     btp.gap_conn()
     stack.gap.wait_for_connection(timeout=5, addr=addr)
     stack.gap.gap_wait_for_sec_lvl_change(level=2, timeout=30)
-    btp.mcp_discover(addr_type, addr)
-    ev = stack.mcp.wait_discovery_completed_ev(addr_type, addr, 20, remove=False)
-    if ev is None:
-        return False
 
     return True
 
@@ -236,7 +232,13 @@ def hdl_wid_20103(params: WIDParams):
     Test (IUT) can send Discover All Characteristics command.
     """
 
-    # Discover and subscribe at hdl_wid_20100
+    addr_type = btp.pts_addr_type_get()
+    addr = btp.pts_addr_get()
+    stack = get_stack()
+    btp.mcp_discover(addr_type, addr)
+    ev = stack.mcp.wait_discovery_completed_ev(addr_type, addr, 20, remove=False)
+    if ev is None:
+        return False
 
     return True
 
@@ -247,7 +249,14 @@ def hdl_wid_20106(params: WIDParams):
     characteristic to enable notification.Descriptor handle value: 0x00B3
     """
 
-    # Discover and subscribe at hdl_wid_20100
+    addr_type = btp.pts_addr_type_get()
+    addr = btp.pts_addr_get()
+    stack = get_stack()
+    btp.mcp_discover(addr_type, addr)
+    ev = stack.mcp.wait_discovery_completed_ev(addr_type, addr, 20, remove=False)
+    if ev is None:
+        return False
+
 
     return True
 
@@ -259,6 +268,8 @@ def hdl_wid_20107(params: WIDParams):
     addr_type = btp.pts_addr_type_get()
     addr = btp.pts_addr_get()
     stack = get_stack()
+
+    stack.mcp.object_id = None
 
     if "Track Duration" in params.description:
         btp.mcp_track_duration_get(addr_type, addr)
@@ -280,13 +291,17 @@ def hdl_wid_20107(params: WIDParams):
         btp.mcp_icon_obj_id_read(addr_type, addr)
         ev = stack.mcp.wait_icon_obj_id_ev(addr_type, addr, 10)
 
-    elif "Next Track" in params.description:
+    elif "Next Track Object" in params.description:
         btp.mcp_next_track_obj_id_read(addr_type, addr)
         ev = stack.mcp.wait_next_track_obj_id_ev(addr_type, addr, 10)
+        if ev is not None:
+            stack.mcp.object_id = ev[3]
 
     elif "Current Track Object" in params.description:
         btp.mcp_current_track_obj_id_read(addr_type, addr)
         ev = stack.mcp.wait_current_track_obj_id_ev(addr_type, addr, 10)
+        if ev is not None:
+            stack.mcp.object_id = ev[3]
 
     elif "Parent Group" in params.description:
         btp.mcp_parent_group_obj_id_read(addr_type, addr)
@@ -296,9 +311,11 @@ def hdl_wid_20107(params: WIDParams):
         btp.mcp_segments_obj_id_read(addr_type, addr)
         ev = stack.mcp.wait_segments_obj_id_ev(addr_type, addr, 10)
 
-    elif "Current Group" in params.description:
+    elif "Current Group Object" in params.description:
         btp.mcp_current_group_obj_id_read(addr_type, addr)
         ev = stack.mcp.wait_current_group_obj_id_ev(addr_type, addr, 10)
+        if ev is not None:
+            stack.mcp.object_id = ev[3]
 
     elif "Playing Order Supported" in params.description:
         btp.mcp_playing_orders_supported_read(addr_type, addr)
@@ -326,13 +343,18 @@ def hdl_wid_20107(params: WIDParams):
     return True
 
 
+def hdl_wid_20109(_: WIDParams):
+    """
+    Please send indications for Characteristic 'Object List Control Point' to the PTS.
+    """
+
+    return True
+
+
 def hdl_wid_20110(params: WIDParams):
     """
     Please send write request to handle 0xXXXX with following value.
-    Audio Input Control Point:
-    Op Code: [1 (0xxx)] x
-    Change Counter: <WildCard: Exists>
-    Gain Setting: <WildCard: Exists>
+    Any attribute value
     """
 
     # This WID appears randomly instead of hdl_wid_20121
@@ -341,24 +363,29 @@ def hdl_wid_20110(params: WIDParams):
     addr_type = btp.pts_addr_type_get()
     addr = btp.pts_addr_get()
 
-    if "0x00F3" in params.description:
+    """ PTS is providing handle value instead of expected action so we map it here based on
+    test case name
+    """
+    if 'MCP/CL/CGGIT/CHA/BV-07-C' == params.test_case_name:
         btp.mcp_track_position_set(100, addr_type, addr)
         ev = stack.mcp.wait_track_position_ev(addr_type, addr, 10)
-    elif "0x00F6" in params.description:
+    elif 'MCP/CL/CGGIT/CHA/BV-08-C' == params.test_case_name:
         btp.mcp_playback_speed_set(64, addr_type, addr)
         ev = stack.mcp.wait_playback_speed_ev(addr_type, addr, 10)
-    elif "0x0101" in params.description:
-        btp.mcp_next_track_obj_id_set(16777477, addr_type, addr)
+    elif 'MCP/CL/CGGIT/CHA/BV-11-C' == params.test_case_name:
+        btp.mcp_current_track_obj_id_set(stack.mcp.object_id, addr_type, addr)
+        ev = stack.mcp.wait_current_track_obj_id_ev(addr_type, addr, 10)
+    elif 'MCP/CL/CGGIT/CHA/BV-12-C' == params.test_case_name:
+        btp.mcp_next_track_obj_id_set(stack.mcp.object_id, addr_type, addr)
         ev = stack.mcp.wait_next_track_obj_id_ev(addr_type, addr, 10)
-    elif "0x0104" in params.description:
-        btp.mcp_current_group_obj_id_set(16777498, addr_type, addr)
+    elif 'MCP/CL/CGGIT/CHA/BV-14-C' == params.test_case_name:
+        btp.mcp_current_group_obj_id_set(stack.mcp.object_id, addr_type, addr)
         ev = stack.mcp.wait_current_group_obj_id_ev(addr_type, addr, 10)
-    elif "0x0107" in params.description:
+    elif 'MCP/CL/CGGIT/CHA/BV-15-C' == params.test_case_name:
         btp.mcp_playing_order_set(2, addr_type, addr)
         ev = stack.mcp.wait_playing_order_ev(addr_type, addr, 10)
-    elif "0x00FE" in params.description:
-        btp.mcp_current_track_obj_id_set(16777499, addr_type, addr)
-        ev = stack.mcp.wait_current_track_obj_id_ev(addr_type, addr, 10)
+    else:
+        ev = None
 
     if ev is None:
         return False
@@ -371,7 +398,13 @@ def hdl_wid_20116(params: WIDParams):
      of the Microphone Control supported by the IUT. Discover primary service if needed.
      """
 
-    # Discover and subscribe at hdl_wid_20100
+    addr_type = btp.pts_addr_type_get()
+    addr = btp.pts_addr_get()
+    stack = get_stack()
+    btp.mcp_discover(addr_type, addr)
+    ev = stack.mcp.wait_discovery_completed_ev(addr_type, addr, 20, remove=False)
+    if ev is None:
+        return False
 
     return True
 
@@ -384,35 +417,32 @@ def hdl_wid_20121(params: WIDParams):
     addr_type = btp.pts_addr_type_get()
     addr = btp.pts_addr_get()
 
-    if "0x00F3" in params.description:
+    """ PTS is providing handle value instead of expected action so we map it here based on
+    test case name
+    """
+    if 'MCP/CL/CGGIT/CHA/BV-07-C' == params.test_case_name:
         btp.mcp_track_position_set(100, addr_type, addr)
         ev = stack.mcp.wait_track_position_ev(addr_type, addr, 10)
-    elif "0x00F6" in params.description:
+    elif 'MCP/CL/CGGIT/CHA/BV-08-C' == params.test_case_name:
         btp.mcp_playback_speed_set(64, addr_type, addr)
         ev = stack.mcp.wait_playback_speed_ev(addr_type, addr, 10)
-    elif "0x0101" in params.description:
-        btp.mcp_next_track_obj_id_set(16777477, addr_type, addr)
+    elif 'MCP/CL/CGGIT/CHA/BV-11-C' == params.test_case_name:
+        btp.mcp_current_track_obj_id_set(stack.mcp.object_id, addr_type, addr)
+        ev = stack.mcp.wait_current_track_obj_id_ev(addr_type, addr, 10)
+    elif 'MCP/CL/CGGIT/CHA/BV-12-C' == params.test_case_name:
+        btp.mcp_next_track_obj_id_set(stack.mcp.object_id, addr_type, addr)
         ev = stack.mcp.wait_next_track_obj_id_ev(addr_type, addr, 10)
-    elif "0x0104" in params.description:
-        btp.mcp_current_group_obj_id_set(16777498, addr_type, addr)
+    elif 'MCP/CL/CGGIT/CHA/BV-14-C' == params.test_case_name:
+        btp.mcp_current_group_obj_id_set(stack.mcp.object_id, addr_type, addr)
         ev = stack.mcp.wait_current_group_obj_id_ev(addr_type, addr, 10)
-    elif "0x0107" in params.description:
+    elif 'MCP/CL/CGGIT/CHA/BV-15-C' == params.test_case_name:
         btp.mcp_playing_order_set(2, addr_type, addr)
         ev = stack.mcp.wait_playing_order_ev(addr_type, addr, 10)
-    elif "0x00FE" in params.description:
-        btp.mcp_current_track_obj_id_set(16777499, addr_type, addr)
-        ev = stack.mcp.wait_current_track_obj_id_ev(addr_type, addr, 10)
+    else:
+        ev = None
 
     if ev is None:
         return False
-
-    # Testcases MCP/CL/CGGIT/CHA/BV-07-C
-    # MCP/CL/CGGIT/CHA/BV-08-C
-    # MCP/CL/CGGIT/CHA/BV-11-C
-    # MCP/CL/CGGIT/CHA/BV-12-C
-    # MCP/CL/CGGIT/CHA/BV-14-C
-    # MCP/CL/CGGIT/CHA/BV-15-C
-    # PTS expects write w/o response, which is why test verdict is inconclusive
 
     return True
 
@@ -479,10 +509,10 @@ def hdl_wid_20206(params: WIDParams):
     stack = get_stack()
 
     if params.test_case_name == "MCP/CL/CGGIT/SER/BV-02-C":
-        chars = stack.mcp.event_queues[defs.MCP_DISCOVERED_EV][0][3:25]
+        chars = stack.mcp.event_queues[defs.BTP_MCP_EV_DISCOVERED][0][3:25]
         chrc_list = [f'{chrc:04X}' for chrc in chars]
     elif params.test_case_name == "MCP/CL/CGGIT/SER/BV-03-C":
-        chars = stack.mcp.event_queues[defs.MCP_DISCOVERED_EV][0][25:]
+        chars = stack.mcp.event_queues[defs.BTP_MCP_EV_DISCOVERED][0][25:]
         chrc_list = [f'{chrc:04X}' for chrc in chars]
         # Object First-Created and Object Last-Modified Characteristic are omitted
         # because Server doest not have access to real time clock (data is set to 0)

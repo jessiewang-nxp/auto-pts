@@ -551,7 +551,7 @@ def get_result_color(status):
         return "green"
     if status == "FAIL":
         return "red"
-    if status == "INCONC":
+    if status in ("INCONC", "INDCSV"):
         return "yellow"
     return "white"
 
@@ -953,7 +953,7 @@ class LTThread(InterruptableThread):
 
         if AUTO_PTS_LOCAL:  # set fake status and return
             statuses = ["PASS", "INCONC", "FAIL", "UNKNOWN VERDICT: NONE",
-                        "BTP ERROR", "XML-RPC ERROR", "BTP TIMEOUT"]
+                        "BTP ERROR", "XML-RPC ERROR", "BTP TIMEOUT", "INDCSV"]
             test_case.status = random.choice(statuses)
             return
 
@@ -1117,6 +1117,18 @@ def run_test_case(ptses, test_case_instances, test_case_name, stats,
     thread_list = []
 
     for thread_count, (test_case_lt, pts) in enumerate(zip(test_case_lts, ptses), 1):
+        if test_case_name.startswith("CSIP/CL/SP") and len(ptses) > 1:
+            # The following tests have shown issues with IRKs being duplicated in one or more lower testers:
+            # - CSIP/CL/SPE/BI-01-C
+            # - CSIP/CL/SP/BV-07-C
+            # - CSIP/CL/SP/BV-03-C
+            # - CSIP/CL/SP/BV-04-C
+            #
+            # Adding a sleep between each lower tester thread start seem to circumvent this issue
+            # but not solve it. Local testing has shown that at least 3 seconds of sleep is required.
+            # The sleep time has been set to 10 to add additional robustness.
+            # This is related to Request ID 147314
+            time.sleep(10)
         thread = LTThread(
             name=f'LT{thread_count}-thread',
             args=(pts, test_case_lt, exceptions, finish_count))
@@ -1361,15 +1373,22 @@ class Client:
             signal.signal(signal.SIGINT, sigint_handler)
 
             return self.main(args)
-        except BaseException as e:
-            if not isinstance(e, KeyboardInterrupt):   # Ctrl-C
-                if e.code != 0:
-                    # Exit with traceback
-                    logging.exception(e)
-
+        except KeyboardInterrupt:
+            # Handling Ctrl-C
+            raise
+        except SystemExit as e:
+            if e.code != 0:
+                logging.exception(e)
+            # Handling --help
+            raise
+        except (TimeoutError, BaseException) as e:
+            logging.exception(e)
+            # We have to propagate an exception from the simple client layer
+            # up to the bot layer, so it could handle its own cleanup.
+            raise
+        finally:
             set_global_end()
             self.cleanup()
-            raise
 
     def main(self, _args=None):
         """Main.
@@ -1543,7 +1562,7 @@ def run_recovery(args, ptses):
         # mynewt project has not been refactored yet to reduce the number of
         # IUT board resets.
         if stack_inst.core:
-            stack_inst.core.event_received(defs.CORE_EV_IUT_READY, True)
+            stack_inst.core.event_received(defs.BTP_CORE_EV_IUT_READY, True)
 
     log('Recovery finished')
 

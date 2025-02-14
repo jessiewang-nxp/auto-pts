@@ -15,6 +15,7 @@
 import os
 import mimetypes
 import smtplib
+import autopts.bot.common as common
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -67,6 +68,48 @@ def status_dict2summary_html(status_dict):
     summary += f'<p style="color:{rate_color};"><b>PassRate = {pass_rate:.2f}%</b></p>'
 
     return summary
+
+
+def html_profile_summary(tc_results):
+    """Creates HTML formatted table with summarized profile results"""
+    test_groups = {}
+    common.get_tc_res_data(tc_results, test_groups)
+
+    for tg in test_groups.values():
+        tg.get_pass_rate()
+
+    table_rows = ""
+    for suite, stats in test_groups.items():
+        table_rows += f"""
+            <tr>
+                <td>{suite}</td>
+                <td>{stats.total}</td>
+                <td>{stats.passed}</td>
+                <td>{stats.failed}</td>
+                <td>{stats.pass_rate:.2f} %</td>
+            </tr>
+            """
+
+    suite_summary = f"""
+        <div>
+            <h3>Test Group/Profile Summary</h3>
+            <table border="1" style="border-collapse: collapse; text-align: center; width: 35em">
+                <thead>
+                    <tr>
+                        <th style="width: 20%">Suite</th>
+                        <th style="width: 20%">Total</th>
+                        <th style="width: 20%">Pass</th>
+                        <th style="width: 20%">Fail</th>
+                        <th style="width: 20%">Pass Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {table_rows}
+                </tbody>
+            </table>
+        </div>
+        """
+    return suite_summary
 
 
 def url2html(url, msg):

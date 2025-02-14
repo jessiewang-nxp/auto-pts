@@ -33,11 +33,11 @@ def build_and_flash(zephyr_wd, board, debugger_snr, conf_file=None, *args):
 
     check_call('rm -rf build/'.split(), cwd=tester_dir)
 
-    bttester_overlay = 'nrf5340_hci_ipc.conf'
+    bttester_overlay = 'hci_ipc.conf'
 
     if conf_file and conf_file != 'default' and conf_file != 'prj.conf':
         bttester_overlay += f';{conf_file}'
 
-    cmd = ['west', 'build', '-b', board, '--', f'-DEXTRA_CONF_FILE=\'{bttester_overlay}\'']
+    cmd = ['west', 'build', '--no-sysbuild', '-b', board, '--', f'-DEXTRA_CONF_FILE=\'{bttester_overlay}\'']
     check_call(cmd, cwd=tester_dir)
     check_call(['west', 'flash', '--skip-rebuild', '--recover', '-i', debugger_snr], cwd=tester_dir)

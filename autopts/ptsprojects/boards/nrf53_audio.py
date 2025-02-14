@@ -18,7 +18,7 @@ import os
 from .nrf5x import *
 from autopts.bot.common import check_call
 
-board_type = 'nrf5340_audio_dk_nrf5340_cpuapp'
+board_type = 'nrf5340_audio_dk/nrf5340/cpuapp'
 
 
 def build_and_flash_core(zephyr_wd, build_dir, board, debugger_snr, configs, recover = False):
@@ -28,7 +28,7 @@ def build_and_flash_core(zephyr_wd, build_dir, board, debugger_snr, configs, rec
     overlay = '-- -DCMAKE_C_FLAGS="-Werror"'
     for conf in configs:
         overlay += f' -D{conf}'
-    cmd = ['west', 'build', '-b', board]
+    cmd = ['west', 'build', '--no-sysbuild', '-b', board]
     cmd.extend(overlay.split())
     check_call(cmd, cwd=build_dir)
     
@@ -69,13 +69,13 @@ def build_and_flash(zephyr_wd, board, debugger_snr, conf_file=None, *args):
     config_dir_net = os.getenv("AUTOPTS_SOURCE_DIR_NET")
     if config_dir_net is None:
         net_core_configs = [f'EXTRA_CONF_FILE=\'nrf5340_cpunet_iso-bt_ll_sw_split.conf;'
-                            f'../../../tests/bluetooth/tester/nrf5340_hci_ipc_cpunet.conf\'']
+                            f'../../../tests/bluetooth/tester/hci_ipc_cpunet.conf\'']
     else:
         conf_path = os.path.join(zephyr_wd, config_dir_net, 'hci_ipc.conf')
         net_core_configs = [f'EXTRA_CONF_FILE=\'{conf_path}\'']
 
     build_and_flash_core(zephyr_wd,
                          os.path.join('samples', 'bluetooth', 'hci_ipc'),
-                         'nrf5340_audio_dk_nrf5340_cpunet',
+                         'nrf5340_audio_dk/nrf5340/cpunet',
                          debugger_snr,
                          net_core_configs)

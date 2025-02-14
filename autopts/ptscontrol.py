@@ -165,6 +165,8 @@ class PTSLogger(win32com.server.connect.ConnectableServer):
 
                         if "PASS" in log_message:
                             new_status = "PASS"
+                        elif "INDCSV" in log_message:
+                            new_status = "INDCSV"
                         elif "INCONC" in log_message:
                             new_status = "INCONC"
                         elif "FAIL" in log_message:
@@ -289,10 +291,16 @@ class PTSSender(win32com.server.connect.ConnectableServer):
         finally:
             self._response.clear()
 
-        # Stringify response
-        rsp = str(rsp)
-        rsp_len = str(len(rsp))
-        is_present = str(1)
+        if rsp in ['No', 'Cancel', 'Abort', None]:
+            # NULL pointer is acceptable for any negative response which includes No and Cancel.
+            rsp = ""
+            rsp_len = 0
+            is_present = False
+        else:  # if rsp in ['OK', 'Yes', 'Retry' or Edit value]:
+            # Stringify response
+            rsp = str(rsp)
+            rsp_len = str(len(rsp))
+            is_present = str(1)
 
         logger.info("END OnImplicitSend")
         logger.info("*" * 20)
@@ -502,7 +510,7 @@ class PyPTS:
         """
 
         log("restart_pts")
-
+        exception = 0
         while not self._end.is_set():
             try:
                 self.stop_pts()
@@ -514,12 +522,20 @@ class PyPTS:
 
                 break
             except Exception as e:
+                exception += 1
                 logging.exception(e)
                 self.stop_pts()
                 # Kill all stale PTS.exe processes only if this is
                 # the only running instance of autoptsserver.py
                 if count_script_instances('autoptsserver.py') <= 1:
                     kill_all_processes('PTS.exe')
+                if exception >= 5:
+                    # This stops PTS from restarting indefinitely when PTS
+                    # dongle is unplugged
+                    print(f"Please check your dongle connection! Aborting")
+                    kill_all_processes('PTS.exe')
+                    self.terminate()
+                    break
 
         return True
 

@@ -1,8 +1,7 @@
 #
 # auto-pts - The Bluetooth PTS Automation Framework
 #
-# Copyright (c) 2017, Intel Corporation.
-# Copyright (c) 2024, Codecoup.
+# Copyright (c) 2025, Nordic Semiconductor ASA.
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
@@ -14,13 +13,14 @@
 # more details.
 #
 
-from autopts.ptsprojects.stack.common import wait_for_queue_event
-from autopts.pybtp import defs
+import logging
+
+from autopts.pybtp.types import WIDParams
+from autopts.wid import generic_wid_hdl
+
+log = logging.debug
 
 
-class TBS:
-    def __init__(self):
-        self.event_queues = {}
-
-    def event_received(self, event_type, event_data_tuple):
-        self.event_queues[event_type].append(event_data_tuple)
+def pbp_wid_hdl(wid, description, test_case_name):
+    log(f'{pbp_wid_hdl.__name__}, {wid}, {description}, {test_case_name}')
+    return generic_wid_hdl(wid, description, test_case_name, [__name__, 'autopts.wid.pbp'])

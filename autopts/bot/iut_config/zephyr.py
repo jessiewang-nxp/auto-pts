@@ -112,6 +112,7 @@ iut_config = {
             'GAP/BROB/BCST/BV-05-C',
             'GAP/BROB/OBSV/BV-06-C',
             'GAP/DISC/RPA/BV-01-C',
+            'GAP/GAT/BV-18-C',
             'SM/CEN/KDU/BV-05-C',
             'SM/CEN/KDU/BV-10-C',
             'SM/CEN/KDU/BV-11-C',
@@ -150,9 +151,9 @@ iut_config = {
             # The overlay file exists in zephyr repo. Leave this empty.
         },
         "test_cases": [
-            'VOCS', 'VCS', 'AICS', 'IAS', 'PACS', 'ASCS', 'BAP', 'HAS', 'CSIS', 'MICP',
-            'MICS', 'VCP', 'MCP', 'CAP', 'BASS', 'GMCS', 'CCP', 'HAP', 'TBS', 'GTBS',
-            'TMAP',
+            'AICS', 'ASCS', 'BAP', 'BASS', 'CAP', 'CAS', 'CCP', 'CSIP', 'CSIS', 'GMAP',
+            'GMCS', 'GTBS', 'HAP', 'HAS', 'IAS', 'MCP', 'MCS', 'MICP', 'MICS', 'PACS',
+            'PBP', 'TBS', 'TMAP', 'VCP', 'VCS', 'VOCS',
         ]
     },
 
@@ -169,6 +170,7 @@ iut_config = {
         "pre_overlay": "overlay-mesh.conf",
         "overlay": {
             'CONFIG_BT_SETTINGS': 'y',
+            'CONFIG_SECURE_STORAGE': 'y',
             'CONFIG_FLASH_PAGE_LAYOUT': 'y',
             'CONFIG_FLASH': 'y',
             'CONFIG_FLASH_MAP': 'y',
@@ -214,6 +216,7 @@ iut_config = {
         "pre_overlay": "overlay-mesh.conf",
         "overlay": {
             'CONFIG_BT_SETTINGS': 'y',
+            'CONFIG_SECURE_STORAGE': 'y',
             'CONFIG_FLASH': 'y',
             'CONFIG_FLASH_PAGE_LAYOUT': 'y',
             'CONFIG_FLASH_MAP': 'y',
@@ -231,6 +234,7 @@ iut_config = {
         "pre_overlay": "overlay-mesh.conf",
         "overlay": {
             'CONFIG_BT_SETTINGS': 'y',
+            'CONFIG_SECURE_STORAGE': 'y',
             'CONFIG_FLASH': 'y',
             'CONFIG_FLASH_PAGE_LAYOUT': 'y',
             'CONFIG_FLASH_MAP': 'y',
@@ -243,7 +247,7 @@ iut_config = {
             'CONFIG_BT_MESH_BLOB_BLOCK_SIZE_MAX': '256'
         },
         "test_cases": [
-            'DFU/SR-CL/GEN/BV-01-C'
+            'DFU/SR-CL/GEN/BV-01-C',
             'DFUM/CL/FU',
             'DFUM/SR/FD',
             'MBTM/SR/BT',
@@ -254,6 +258,7 @@ iut_config = {
         "pre_overlay": "overlay-mesh.conf",
         "overlay": {
             'CONFIG_BT_SETTINGS': 'y',
+            'CONFIG_SECURE_STORAGE': 'y',
             'CONFIG_FLASH': 'y',
             'CONFIG_FLASH_PAGE_LAYOUT': 'y',
             'CONFIG_FLASH_MAP': 'y',
@@ -266,10 +271,32 @@ iut_config = {
             'CONFIG_BT_MESH_BLOB_BLOCK_SIZE_MAX': '256'
         },
         "test_cases": [
-            'DFUM/SR/FU',
-            'MBTM/CL/BT'
+            'DFUM/SR/FU'
         ]
     },
+
+    "mesh_blob_cli.conf": {
+        "pre_overlay": "overlay-mesh.conf",
+        "overlay": {
+            'CONFIG_BT_SETTINGS': 'y',
+            'CONFIG_SECURE_STORAGE': 'y',
+            'CONFIG_FLASH': 'y',
+            'CONFIG_FLASH_PAGE_LAYOUT': 'y',
+            'CONFIG_FLASH_MAP': 'y',
+            'CONFIG_NVS': 'y',
+            'CONFIG_BT_MESH_SETTINGS_WORKQ_STACK_SIZE': '1200',
+            'CONFIG_BT_MESH_DFD_SRV': 'n',
+            'CONFIG_BT_MESH_DFU_SRV': 'n',
+            'CONFIG_BT_MESH_BLOB_SRV': 'n',
+            'CONFIG_BT_MESH_DFD_SRV_OOB_UPLOAD': 'y',
+            'CONFIG_BT_MESH_BLOB_SIZE_MAX': '5000',
+            'CONFIG_BT_MESH_BLOB_BLOCK_SIZE_MIN': '256',
+            'CONFIG_BT_MESH_BLOB_BLOCK_SIZE_MAX': '256'
+        },
+        "test_cases": [
+            'MBTM/CL/BT'
+        ]
+    }
 }
 
 retry_config = {
